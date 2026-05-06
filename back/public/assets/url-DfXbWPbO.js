@@ -1,0 +1,1 @@
+const s=e=>{if(!e)return"https://placehold.co/600x400?text=Sin+Imagen";if(e.startsWith("http")&&!e.includes("/storage/"))return e;let t=e;e.includes("storage/")&&(t=e.split("storage/").pop()||"");const a="http://127.0.0.1:8000".replace(/\/+$/,"");return t=t.replace("public/","").replace(/^\/+/,"").replace(/\/+/g,"/"),`${a}/storage/${t}`};export{s as f};

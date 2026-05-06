@@ -10,7 +10,6 @@ use Illuminate\Support\Str;
 use Lcobucci\JWT\Validation\Validator;
 use LdapRecord\Container;
 use Spatie\Permission\Models\Role;
-
 class AuthController extends Controller
 {
     // ... (Tu método register se queda igual, aunque con LDAP suele usarse menos)

@@ -69,7 +69,7 @@ export const useAuthStore = defineStore("auth_store", () => {
     delete axios.defaults.headers.common["Authorization"];
 
     setTimeout(() => {
-      router.push("/auth/sign-in");
+      router.push("admin/auth/sign-in");
     }, 25);
   };
 
