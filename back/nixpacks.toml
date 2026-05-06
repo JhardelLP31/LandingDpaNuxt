@@ -1,0 +1,12 @@
+[phases.setup]
+nixPkgs = [
+    'php82',
+    'php82Packages.composer',
+    'php82Extensions.ldap',
+    'php82Extensions.soap',
+    'php82Extensions.gd',
+    'php82Extensions.pdo_mysql'
+]
+
+[phases.install]
+cmds = ['composer install --optimize-autoloader --no-interaction --no-dev --ignore-platform-req=ext-ldap --ignore-platform-req=ext-soap --ignore-platform-req=ext-gd']
