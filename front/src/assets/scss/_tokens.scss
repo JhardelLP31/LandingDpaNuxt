@@ -1,0 +1,22 @@
+// src/assets/scss/_tokens.scss
+
+// Tus colores marca
+$brand-primary: #144c74; // Azul profundo
+$brand-secondary: #746c6c; // Gris neutro
+$brand-accent: #e31140; // Rojo vibrante
+
+:root {
+  // Variables CSS dinámicas que Vue puede leer
+  --color-primary: #{$brand-primary};
+  --color-secondary: #{$brand-secondary};
+  --color-accent: #{$brand-accent};
+  --bg-section: #{$white};
+  --text-main: #{$gray-900};
+}
+
+// Sobreescritura para Modo Oscuro
+[data-theme="dark"] {
+  --bg-section: #{$gray-900};
+  --text-main: #{$gray-100};
+  --color-primary: #{lighten($brand-primary, 15%)}; // Ajuste para legibilidad
+}

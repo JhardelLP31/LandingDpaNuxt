@@ -1,0 +1,4 @@
+php artisan config:clear
+php artisan cache:clear
+rm -rf public/storage       # En Windows usa: rmdir /s /q "public\storage"
+php artisan storage:link

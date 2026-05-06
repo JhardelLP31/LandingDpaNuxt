@@ -1,0 +1,211 @@
+-- DB Architect Pro - Final Master Schema
+-- Generador de Landings & CMS Multi-Unidad Académica
+-- Optimizado para MySQL 8.0+ (Soporte nativo JSON e integridad referencial)
+
+SET NAMES utf8mb4;
+SET FOREIGN_KEY_CHECKS = 0;
+
+-- --------------------------------------------------------
+-- 1. UNIDADES ACADÉMICAS (Los "Dueños" del contenido)
+-- --------------------------------------------------------
+CREATE TABLE `academic_units` (
+  `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
+  `name` varchar(255) NOT NULL, -- Ej: DPA, Pregrado, Idiomas
+  `slug` varchar(255) NOT NULL,
+  `code` varchar(50) UNIQUE COMMENT 'Código interno de la institución',
+  `is_active` tinyint(1) DEFAULT 1,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unit_slug_unique` (`slug`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+-- 2. BRANDING E IDENTIDAD VISUAL (Configura Header/Footer)
+-- --------------------------------------------------------
+CREATE TABLE `unit_branding` (
+  `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
+  `academic_unit_id` bigint UNSIGNED NOT NULL,
+  `primary_color` varchar(7) DEFAULT '#01828f',
+  `secondary_color` varchar(7) DEFAULT '#ffffff',
+  `accent_color` varchar(7) DEFAULT '#f4a912',
+  `logo_primary_id` bigint UNSIGNED DEFAULT NULL COMMENT 'Logo para fondo claro',
+  `logo_footer_id` bigint UNSIGNED DEFAULT NULL,
+  `favicon_id` bigint UNSIGNED DEFAULT NULL,
+  -- Configuración de diseño del Header y Footer (JSON)
+  `header_config` json DEFAULT NULL COMMENT '{ "style": "sticky", "transparent": false, "show_search": true }',
+  `footer_config` json DEFAULT NULL COMMENT '{ "columns": 4, "social_links": [], "copyright": "..." }',
+  `custom_css` text DEFAULT NULL COMMENT 'CSS específico para esta unidad',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `branding_unit_unique` (`academic_unit_id`),
+  CONSTRAINT `fk_branding_unit` FOREIGN KEY (`academic_unit_id`) REFERENCES `academic_units` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+
+-- --------------------------------------------------------
+-- 3. GESTIÓN DE MEDIA (Carpetas virtuales tipo Joomla)
+-- --------------------------------------------------------
+CREATE TABLE `media_folders` (
+  `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
+  `parent_id` bigint UNSIGNED DEFAULT NULL,
+  `academic_unit_id` bigint UNSIGNED NOT NULL,
+  `name` varchar(255) NOT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  CONSTRAINT `fk_folder_parent` FOREIGN KEY (`parent_id`) REFERENCES `media_folders` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_folder_unit` FOREIGN KEY (`academic_unit_id`) REFERENCES `academic_units` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `media` (
+  `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
+  `folder_id` bigint UNSIGNED DEFAULT NULL,
+  `filename` varchar(255) NOT NULL,
+  `url` varchar(500) NOT NULL,
+  `path` varchar(500) NOT NULL,
+  `mime_type` varchar(100) DEFAULT NULL,
+  `size` bigint UNSIGNED DEFAULT NULL,
+  `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  CONSTRAINT `fk_media_folder` FOREIGN KEY (`folder_id`) REFERENCES `media_folders` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- --------------------------------------------------------
+-- 4. CATEGORÍAS (Segmentación por Unidad)
+-- --------------------------------------------------------
+CREATE TABLE `categories` (
+  `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
+  `academic_unit_id` bigint UNSIGNED NOT NULL,
+  `parent_id` bigint UNSIGNED DEFAULT NULL,
+  `name` varchar(255) NOT NULL,
+  `slug` varchar(255) NOT NULL,
+  `type` varchar(50) DEFAULT 'general',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  CONSTRAINT `fk_cat_unit` FOREIGN KEY (`academic_unit_id`) REFERENCES `academic_units` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_cat_parent` FOREIGN KEY (`parent_id`) REFERENCES `categories` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- --------------------------------------------------------
+-- 5. PROGRAMAS DE ESTUDIO (Identidad Académica)
+-- --------------------------------------------------------
+CREATE TABLE `study_programs` (
+  `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
+  `academic_unit_id` bigint UNSIGNED NOT NULL,
+  `category_id` bigint UNSIGNED NOT NULL,
+  `name` varchar(255) NOT NULL,
+  `slug` varchar(255) NOT NULL,
+  `branding_color` varchar(7) DEFAULT '#000000',
+  `description` text,
+  `is_active` tinyint(1) DEFAULT 1,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  CONSTRAINT `fk_sp_unit` FOREIGN KEY (`academic_unit_id`) REFERENCES `academic_units` (`id`),
+  CONSTRAINT `fk_sp_cat` FOREIGN KEY (`category_id`) REFERENCES `categories` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- --------------------------------------------------------
+-- 6. CONTENIDOS (Motor de Bloques JSON - El Constructor)
+-- --------------------------------------------------------
+CREATE TABLE `contents` (
+  `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
+  `academic_unit_id` bigint UNSIGNED NOT NULL,
+  `user_id` bigint UNSIGNED NOT NULL,
+  `title` varchar(255) NOT NULL,
+  `slug` varchar(255) NOT NULL,
+  `type` enum('page', 'post', 'landing', 'news') DEFAULT 'page',
+  
+  -- AQUÍ SE GUARDA EL JSON DE BLOQUES (Hero, CTA, Grid, etc.)
+  `content_blocks` json DEFAULT NULL,
+  
+  `status` enum('draft', 'published', 'archived') DEFAULT 'draft',
+  `seo_config` json DEFAULT NULL COMMENT '{ "title": "", "description": "", "og_image": "" }',
+  `published_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `content_slug_unit_unique` (`slug`, `academic_unit_id`),
+  CONSTRAINT `fk_content_unit` FOREIGN KEY (`academic_unit_id`) REFERENCES `academic_units` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+-- 7. CAMPAÑAS DE MARKETING (Captación)
+-- --------------------------------------------------------
+CREATE TABLE `marketing_campaigns` (
+  `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
+  `academic_unit_id` bigint UNSIGNED NOT NULL,
+  `study_program_id` bigint UNSIGNED DEFAULT NULL COMMENT 'A qué carrera apunta',
+  `content_id` bigint UNSIGNED NOT NULL COMMENT 'La landing asociada',
+  `name` varchar(255) NOT NULL,
+  `slug` varchar(255) NOT NULL,
+  `academic_period` varchar(50) DEFAULT NULL COMMENT 'Ej: 2026-I',
+  `form_config` json DEFAULT NULL COMMENT 'Configura los campos del formulario',
+  `utm_source_default` varchar(100) DEFAULT 'web',
+  `is_active` tinyint(1) DEFAULT 1,
+  `start_date` date DEFAULT NULL,
+  `end_date` date DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `campaign_slug_unit_unique` (`slug`, `academic_unit_id`),
+  CONSTRAINT `fk_campaign_unit` FOREIGN KEY (`academic_unit_id`) REFERENCES `academic_units` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_campaign_sp` FOREIGN KEY (`study_program_id`) REFERENCES `study_programs` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_campaign_content` FOREIGN KEY (`content_id`) REFERENCES `contents` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- --------------------------------------------------------
+-- 8. MENÚS Y NAVEGACIÓN (Recursivo)
+-- --------------------------------------------------------
+CREATE TABLE `menus` (
+  `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
+  `academic_unit_id` bigint UNSIGNED NOT NULL,
+  `name` varchar(100) NOT NULL,
+  `location` varchar(50) NOT NULL COMMENT 'header, footer, sidebar_dpa',
+  `settings` json DEFAULT NULL COMMENT 'Diseño específico del menú',
+  PRIMARY KEY (`id`),
+  CONSTRAINT `fk_menu_unit` FOREIGN KEY (`academic_unit_id`) REFERENCES `academic_units` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `menu_items` (
+  `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
+  `menu_id` bigint UNSIGNED NOT NULL,
+  `parent_id` bigint UNSIGNED DEFAULT NULL,
+  `content_id` bigint UNSIGNED DEFAULT NULL COMMENT 'Link a página interna',
+  `title` varchar(255) NOT NULL,
+  `url` varchar(255) DEFAULT NULL COMMENT 'Link externo',
+  `order` int DEFAULT 0,
+  `target` enum('_self', '_blank') DEFAULT '_self',
+  PRIMARY KEY (`id`),
+  CONSTRAINT `fk_mi_menu` FOREIGN KEY (`menu_id`) REFERENCES `menus` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_mi_parent` FOREIGN KEY (`parent_id`) REFERENCES `menu_items` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_mi_content` FOREIGN KEY (`content_id`) REFERENCES `contents` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- --------------------------------------------------------
+-- 9. LEADS (Registro de Interesados)
+-- --------------------------------------------------------
+CREATE TABLE `leads` (
+  `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
+  `campaign_id` bigint UNSIGNED NOT NULL,
+  `first_name` varchar(150) NOT NULL,
+  `last_name` varchar(150) NOT NULL,
+  `email` varchar(255) NOT NULL,
+  `phone` varchar(50) DEFAULT NULL,
+  `payload` json DEFAULT NULL COMMENT 'Respuestas dinámicas',
+  `marketing_metadata` json DEFAULT NULL COMMENT 'UTMs, IP, Device, Referrer',
+  `status` enum('new', 'contacted', 'converted', 'spam') DEFAULT 'new',
+  `external_sync_status` varchar(50) DEFAULT 'pending',
+  `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_lead_email` (`email`),
+  CONSTRAINT `fk_lead_campaign` FOREIGN KEY (`campaign_id`) REFERENCES `marketing_campaigns` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+
+ALTER TABLE `unit_branding` 
+ADD COLUMN `created_at` TIMESTAMP NULL,
+ADD COLUMN `updated_at` TIMESTAMP NULL;
+
+
+
+SET FOREIGN_KEY_CHECKS = 1;

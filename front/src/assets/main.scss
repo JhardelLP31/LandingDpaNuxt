@@ -1,0 +1,90 @@
+// src/assets/main.scss
+
+// 1. COLORES OFICIALES ESAN (Extraídos de la imagen)
+$esan-red: #e31140;
+$esan-black: #000000;
+$esan-dark-gray: #333333;
+$esan-light-gray: #E6E7E8; // Para las pestañas inactivas
+$esan-white: #FFFFFF;
+
+
+// Efecto Hover para el botón blanco
+.group-hover-effect {
+    transition: all 0.3s ease;
+
+    &:hover {
+        background-color: #fff;
+        transform: translateX(5px); // Se mueve un poquito a la derecha
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+
+        i {
+            transform: translateX(3px);
+        }
+
+        // El icono se mueve extra
+    }
+
+    i {
+        transition: transform 0.3s ease;
+    }
+}
+
+// Sobrescribir variables de Bootstrap
+:root {
+    --bs-primary: #{$esan-red};
+    --bs-primary-rgb: 227, 6, 19;
+    --bs-dark: #{$esan-black};
+}
+
+body {
+    background-color: $esan-white;
+    font-family: 'Arial', sans-serif; // ESAN usa una tipografía muy limpia y estándar
+    color: $esan-dark-gray;
+}
+
+// Clases de utilidad ESAN
+.bg-esan-red {
+    background-color: $esan-red !important;
+}
+
+.text-esan-red {
+    color: $esan-red !important;
+}
+
+.bg-esan-black {
+    background-color: $esan-black !important;
+}
+
+// Botón Rojo ESAN (Ej: "MÁS INFORMACIÓN")
+.btn-esan-red {
+    background-color: $esan-red;
+    color: white;
+    font-weight: 700;
+    border-radius: 0; // Botones cuadrados
+    text-transform: uppercase;
+    padding: 10px 25px;
+    border: none;
+    transition: all 0.3s;
+
+    &:hover {
+        background-color: darken($esan-red, 10%);
+        color: white;
+    }
+}
+
+// Botón de Portal Académico (Borde blanco)
+.btn-portal {
+    background-color: $esan-red;
+    color: white;
+    border: 1px solid white;
+    border-radius: 20px; // Redondeado
+    font-size: 0.8rem;
+    font-weight: bold;
+    padding: 5px 15px;
+    text-transform: uppercase;
+
+    &:hover {
+        background-color: darken($esan-red, 5%);
+        color: white;
+    }
+}
